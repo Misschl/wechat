@@ -1,0 +1,17 @@
+asgiref==3.2.3
+certifi==2019.11.28
+chardet==3.0.4
+Django==2.1.5
+django-redis==4.11.0
+djangorestframework==3.11.0
+future==0.18.2
+idna==2.8
+itchat==1.2.32
+pypng==0.0.20
+PyQRCode==1.2.1
+pytz==2019.3
+redis==3.3.11
+requests==2.22.0
+sqlparse==0.3.0
+urllib3==1.25.7
+wxpy==0.3.9.8
