@@ -6,12 +6,13 @@ from wxpy.api.messages import MessageConfig
 
 from .security import create_signature
 from .action import SimpleAction
+from . import serializers
 from robot import get_message_helper
 from utils.etc import show_spend_time
 
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
-import os
+import requests
 import time, logging
 
 DEFAULT_UPDATE_FREQUENCY = getattr(settings, 'UPDATE_FREQUENCY', 60 * 60 * 2)
@@ -69,6 +70,7 @@ quene = Quene()
 
 
 class Robot:
+    forward_serializers_route = serializers.MessageModelSerializer.serializers_route
 
     def __init__(self, bot: Bot, app: models.AppModel):
         self.bot = bot
@@ -105,10 +107,21 @@ class Robot:
                           run_async=run_async, enabled=enabled))
 
     def forward(self, msg):
-        self.save_message(msg)
+        try:
+            message, obj = self.action.get_message(msg)
+            forward_url = self.get_forward_url()
+            forward_data = self.get_forward_data(message, obj)
+            r = requests.post(forward_url, json=forward_data)
+            print(r.json())
+        except Exception:
+            pass
 
-    def save_message(self, msg):
-        self.action.get_message(msg)
+    def get_forward_data(self, message, obj):
+        message_data = serializers.MessageModelSerializer(instance=message).data
+        serializer_class = self.forward_serializers_route.get(message.type)
+        obj_data = serializer_class(instance=obj).data
+        message_data.update({'content': obj_data})
+        return message_data
 
     def get_forward_url(self):
         timestamp = f'{int(time.time() * 1000)}'

@@ -7,8 +7,10 @@ from robot import get_message_helper
 
 from . import exception
 
-from wxpy.api.bot import Group, Friend
+from wxpy.api.bot import Group, Friend, MP
 from wxpy.api.messages import Message
+
+import pysnooper
 
 helper = get_message_helper()
 
@@ -64,6 +66,15 @@ class GroupSerializer(serializers.Serializer):
     user_name = serializers.CharField()
 
 
+class MpsSerializer(serializers.Serializer):
+    puid = serializers.CharField()
+    name = serializers.CharField()
+    nick_name = serializers.CharField()
+    province = serializers.CharField()
+    city = serializers.CharField()
+    signature = serializers.CharField()
+
+
 class WxUserModelSerializer(AbstractSerializer, serializers.ModelSerializer):
     class Meta:
         model = models.WxUser
@@ -112,88 +123,131 @@ class WxGroupModelSerializer(AbstractSerializer, serializers.ModelSerializer):
             instance.members.add(obj)
 
 
-class TextModelSerializer(serializers.ModelSerializer):
+class WxMpsModelSerializer(AbstractSerializer, serializers.ModelSerializer):
+    class Meta:
+        model = models.WxMps
+        relate_serializer = MpsSerializer
+        exclude = ['insert_time', 'update_time']
+
+    def get_obj(self, **kwargs):
+        maps = self.context.get('maps')
+        return maps
+
+    def _save(self, data):
+        maps = self.get_obj()
+        bot_user = maps.bot.self
+        puid = bot_user.puid
+        owner = models.WxUser.objects.get(puid=puid)
+        obj = self.model.objects.update_or_create(defaults=data, puid=maps.puid)[0]
+        obj.owner = owner
+        obj.save()
+        return obj
+
+
+class MessageMixin:
+
+    @classmethod
+    def save_message(cls, message, instance, data):
+        serializer = cls(instance=message)
+        serializer_data = cls.get_serializer_data(serializer, message, instance, data)
+        serializer = cls(data=serializer_data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.save()
+
+    @classmethod
+    def get_serializer_data(cls, serializer, message, instance, data):
+        extra_data = cls.get_extra_data(serializer, message, instance, data)
+        extra_data.update({'message': instance.id})
+        extra_data.update(extra_data)
+        return extra_data
+
+    @classmethod
+    def get_extra_data(cls, serializer, message, instance, data):
+        return {}
+
+
+class TextModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.TextMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        data.update({'message': instance.id})
-        return data
+    def get_extra_data(cls, serializer, message, instance, data):
+        return {'text': message.text}
 
 
-class MapModelSerializer(serializers.ModelSerializer):
+class MapModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.MapMessage
         fields = '__all__'
 
-    def get_new_instance(self, instance):
-        return instance.location
-
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        data.update({'message': instance.id})
-        return data
+    def get_serializer_data(cls, serializer, message, instance, data):
+        location = message.location
+        location.update({'url': message.url, 'text': message.text, 'message': instance.id})
+        return location
 
 
-class SharingModelSerializer(serializers.ModelSerializer):
+class SharingModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.SharingMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        data.update({'message': instance.id})
-        return data
+    def get_extra_data(cls, serializer, message, instance, data):
+        return {'text': message.text, 'url': message.url}
 
 
-class PictureModelSerializer(serializers.ModelSerializer):
+class PictureModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.PictureMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        url = helper(message=obj).save_message_picture()
-        data.update({'message': instance.id, 'url': url})
-        return data
+    def get_serializer_data(cls, serializer, message, instance, data):
+        url = helper(message=message).save_message_picture()
+        serializer_data = serializer.data
+        serializer_data.update({'message': instance.id, 'url': url})
+        return serializer_data
 
 
-class RecordingModelSerializer(serializers.ModelSerializer):
+class RecordingModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.RecordingMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        url = helper(message=obj).save_message_recording()
-        data.update({'message': instance.id, 'url': url})
-        return data
+    def get_serializer_data(cls, serializer, message, instance, data):
+        url = helper(message=message).save_message_recording()
+        serializer_data = serializer.data
+        serializer_data.update({'message': instance.id, 'url': url})
+        return serializer_data
 
 
-class AttachmentModelSerializer(serializers.ModelSerializer):
+class AttachmentModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.AttachmentMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        url = helper(message=obj).save_message_file()
-        data.update({'message': instance.id, 'url': url})
-        return data
+    def get_serializer_data(cls, serializer, message, instance, data):
+        url = helper(message=message).save_message_file()
+        serializer_data = serializer.data
+        serializer_data.update({'message': instance.id, 'url': url})
+        return serializer_data
 
 
-class VideoModelSerializer(serializers.ModelSerializer):
+class VideoModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
         model = models.VideoMessage
         fields = '__all__'
 
     @classmethod
-    def serializer_data(cls, data, instance, obj):
-        url = helper(message=obj).save_message_video()
-        data.update({'message': instance.id, 'url': url})
-        return data
+    def get_serializer_data(cls, serializer, message, instance, data):
+        url = helper(message=message).save_message_video()
+        serializer_data = serializer.data
+        serializer_data.update({'message': instance.id, 'url': url})
+        return serializer_data
 
 
 class MessageSerializer(serializers.Serializer):
@@ -237,39 +291,31 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
         return self.context.get('message')
 
     @transaction.atomic
+    @pysnooper.snoop()
     def _save(self, data: dict):
+        # 设置保存点
         save_point = transaction.savepoint()
-        obj = self.get_obj()
-        send_user, send_group, receiver, is_at = self.get_extra_data(obj)
-        data.update({'send_user': send_user, 'send_group': send_group, 'receiver': receiver, 'is_at': is_at})
+        # 获取消息对象
+        message = self.get_obj()
+        # 获取信息的属性
+        send_user, send_group, receiver, is_at, maps = self.get_extra_data(message)
+        data.update(
+            {'send_user': send_user, 'send_group': send_group, 'receiver': receiver, 'is_at': is_at, 'maps': maps}
+        )
+        # 创建一条信息记录
         instance: models.Message = self.model.objects.create(**data)
         try:
+            # 根据消息类型来获取不同的序列化器
             serializer_class = self.serializers_route.get(instance.type)
-            serializer = serializer_class(instance=obj)
-            data = self.get_serializer_data(serializer.data, instance, obj, serializer_class)
-            print(data)
-            serializer = serializer_class(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            print(666)
-            transaction.savepoint_rollback(save_point)
+            # 保存信息
+            handle = getattr(serializer_class, 'save_message')
+            obj = handle(message, instance, data)
+            print('保存完毕！')
+            return instance, obj
         except Exception as e:
             print(e)
+            # 回滚
             transaction.savepoint_rollback(save_point)
-
-    def get_serializer_data(self, data: dict, instance: models.Message, obj, serializer_class):
-        handle = getattr(serializer_class, 'serializer_data', self.get_default_serializer_data)
-        return handle(data, instance, obj)
-
-    def get_instance(self, instance, serializer_class):
-        handle = getattr(serializer_class, 'get_new_instance', self.get_default_instance)
-        return handle(instance)
-
-    def get_default_instance(self, instance):
-        return instance
-
-    def get_default_serializer_data(self, data, instance, obj):
-        return data
 
     def get_extra_data(self, obj: Message):
         sender = obj.sender
@@ -278,13 +324,22 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
             send_group = action().get_group(sender, update_members=False)
             send_user = action().get_user(obj.member)
             is_at = obj.is_at
+            maps = None
         elif isinstance(sender, Friend):
             send_user = action().get_user(sender)
             send_group = None
             is_at = None
-
+            maps = None
+        elif MP:
+            send_user = None
+            send_group = None
+            is_at = None
+            maps = action().get_map(sender)
         else:
             raise exception.UnknowMsgTypeException()
-        print(type(sender))
         receiver = action().get_user(receiver)
-        return send_user, send_group, receiver, is_at
+        return send_user, send_group, receiver, is_at, maps
+
+
+class ReplyMessage(serializers.Serializer):
+    pass

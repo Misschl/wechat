@@ -90,6 +90,19 @@ class WxGroup(BaseModel):
         verbose_name_plural = verbose_name = '微信群组'
 
 
+class WxMps(BaseModel):
+    puid = models.CharField(max_length=15, primary_key=True)
+    name = models.CharField(max_length=32, verbose_name='名称')
+    nick_name = models.CharField(max_length=32, verbose_name='昵称')
+    province = models.CharField(max_length=15, verbose_name="省", null=True)
+    city = models.CharField(max_length=15, verbose_name="市", null=True)
+    signature = models.CharField(max_length=255, verbose_name="签名", null=True)
+    owner = models.ForeignKey(WxUser, on_delete=models.SET_NULL, null=True, verbose_name='群归属')
+
+    class Meta:
+        verbose_name_plural = verbose_name = '微信公众号'
+
+
 class Message(BaseModel):
     TYPE_CHOICES = (
         ('Text', '文本'),
@@ -111,6 +124,7 @@ class Message(BaseModel):
     is_at = models.BooleanField(default=False, null=True)
     send_user = models.ForeignKey(WxUser, on_delete=models.SET_NULL, null=True, related_name='send_user')
     send_group = models.ForeignKey(WxGroup, on_delete=models.SET_NULL, null=True)
+    maps = models.ForeignKey(WxMps, on_delete=models.SET_NULL, null=True)
     receiver = models.ForeignKey(WxUser, on_delete=models.SET_NULL, null=True, related_name='receiver')
 
     class Meta:
@@ -138,16 +152,16 @@ class MapMessage(BaseMessage):
     label = models.CharField(max_length=255)
     maptype = models.IntegerField()
     poiname = models.CharField(max_length=255)
-    poiid = models.CharField(max_length=255)
-    url = models.CharField(max_length=50)
-    text = models.CharField(max_length=50)
+    poiid = models.CharField(max_length=255, blank=True)
+    url = models.CharField(max_length=500)
+    text = models.CharField(max_length=255)
 
     class Meta:
         verbose_name = verbose_name_plural = '位置消息'
 
 
 class SharingMessage(BaseMessage):
-    url = models.CharField(max_length=50)
+    url = models.CharField(max_length=500)
     text = models.CharField(max_length=50)
 
     class Meta:
@@ -155,8 +169,8 @@ class SharingMessage(BaseMessage):
 
 
 class PictureMessage(BaseMessage):
-    file_name = models.CharField(max_length=30, verbose_name='文件名')
-    url = models.CharField(verbose_name='文件地址', max_length=50)
+    file_name = models.CharField(max_length=255, verbose_name='文件名')
+    url = models.CharField(verbose_name='文件地址', max_length=500)
     img_height = models.IntegerField(verbose_name='图片高度')
     img_width = models.IntegerField(verbose_name='图片宽度')
 
@@ -166,17 +180,17 @@ class PictureMessage(BaseMessage):
 
 class RecordingMessage(BaseMessage):
     voice_length = models.BigIntegerField()
-    url = models.CharField(max_length=50)
-    file_name = models.CharField(max_length=30)
+    url = models.CharField(max_length=500)
+    file_name = models.CharField(max_length=255)
 
     class Meta:
         verbose_name = verbose_name_plural = '录音消息'
 
 
 class AttachmentMessage(BaseMessage):
-    file_name = models.CharField(max_length=20)
+    file_name = models.CharField(max_length=255)
     file_size = models.CharField(max_length=20)
-    url = models.CharField(max_length=50)
+    url = models.CharField(max_length=500)
 
     class Meta:
         verbose_name = verbose_name_plural = '文件消息'
@@ -184,8 +198,8 @@ class AttachmentMessage(BaseMessage):
 
 class VideoMessage(BaseMessage):
     play_length = models.IntegerField()
-    file_name = models.CharField(max_length=20)
-    url = models.CharField(max_length=50)
+    file_name = models.CharField(max_length=255)
+    url = models.CharField(max_length=500)
 
     class Meta:
         verbose_name = verbose_name_plural = '视频消息'

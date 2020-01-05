@@ -1,7 +1,7 @@
 from wxpy import Bot
 from wxpy.api.messages import Message
 
-from .serializers import WxUserModelSerializer, WxGroupModelSerializer, MessageModelSerializer
+from .serializers import WxUserModelSerializer, WxGroupModelSerializer, MessageModelSerializer, WxMpsModelSerializer
 
 
 class SimpleAction:
@@ -21,6 +21,10 @@ class SimpleAction:
     def get_group(self, group, update_members=True, **kwargs):
         serializer = WxGroupModelSerializer(context={'group': group})
         return serializer.save(update_members=update_members, **kwargs)
+
+    def get_map(self, maps, **kwargs):
+        sserializer = WxMpsModelSerializer(context={'maps': maps})
+        return sserializer.save(**kwargs)
 
     def get_message(self, msg, **kwargs):
         serializer = MessageModelSerializer(context={'message': msg})
