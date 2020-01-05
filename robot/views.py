@@ -1,7 +1,10 @@
 from django.shortcuts import HttpResponse
 
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
+
+from utils import views
 
 from wxpy import Bot
 from threading import Thread
@@ -10,6 +13,7 @@ from robot.core import robot
 
 from . import serializers
 from . import models
+from . import authentication
 
 import time
 
@@ -19,6 +23,7 @@ class LoginView(GenericViewSet):
     _uuid = None
     _status = None
     serializer_class = serializers.AppModel
+    queryset = models.AppModel.objects.all()
 
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.GET)
@@ -28,7 +33,6 @@ class LoginView(GenericViewSet):
         Thread(target=self.login, args=(app,)).start()
         response = self.get_response()
         return HttpResponse(response, content_type='image/png')
-        # return response
 
     def login(self, app: models.AppModel):
         cache_pkl = app.cache_pkl(delete=True)
@@ -40,8 +44,8 @@ class LoginView(GenericViewSet):
 
     @staticmethod
     def check_bot_permissions(bot, app):
-        if app.bind_user.puid != bot.bot.self.puid:
-            raise Exception()
+        # if app.bind_user.puid != bot.bot.self.puid:
+        #     raise Exception()
         return True
 
     # 递归查询二维码是否生成
@@ -61,3 +65,37 @@ class LoginView(GenericViewSet):
         self._qrcode = qrcode
         self._status = status
         self._uuid = uuid
+
+
+class GroupApi(views.ReadOnlyModelViewSet):
+    serializer_class = serializers.GroupModelSerializer
+    authentication_classes = [authentication.AppAuthentication]
+    queryset = models.WxGroup.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
+
+
+class FriendsApi(views.ReadOnlyModelViewSet):
+    """
+    好友列表api
+    list:
+        读取好友列表
+    retrieve:
+        获取单个好友信息
+    """
+    serializer_class = serializers.FriendsModelSerializer
+    queryset = models.WxUser.objects.all()
+    authentication_classes = [authentication.AppAuthentication]
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
+
+
+class MembersApi(RetrieveModelMixin, views.GenericViewSet):
+    serializer_class = serializers.GroupMembersModelSerializer
+    authentication_classes = [authentication.AppAuthentication]
+    queryset = models.WxGroup.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)

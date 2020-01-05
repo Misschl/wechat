@@ -34,7 +34,7 @@ class FileHandle(BaseHandle):
     def get_avatar(self, instance):
         """存储头像"""
         content = instance.get_avatar()
-        file_name = f'{instance.puid}.png'
+        file_name = f'{instance.puid}.jpg'
         avatar_path = self.get_save_path(self.DEFAULT_ACATAR_PATH)
         path = os.path.join(avatar_path, file_name)
         with open(f'{path}', 'wb+') as f:

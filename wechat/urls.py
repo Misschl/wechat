@@ -19,8 +19,15 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 from django.conf import settings
 
+from rest_framework.schemas import get_schema_view
+from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+
+schema_view = get_schema_view(title='Users API', renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer])
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('robot.urls')),
     re_path('^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_PATH}),
+    path('docs/', schema_view),
+    path('restframework', include('rest_framework.urls')),
 ]

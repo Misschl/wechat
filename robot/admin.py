@@ -25,10 +25,15 @@ class AppAdmin(admin.ModelAdmin):
 
 @admin.register(models.WxUser)
 class WxUserAdmin(admin.ModelAdmin):
-    list_display = ['name', 'nick_name', 'remark_name', 'avatar_url', 'signature', 'sex', 'province', 'city',
-                    'owner', 'puid', 'insert_time', 'update_time', ]
+    search_fields = ['name', 'nick_name', 'remark_name', 'signature', 'sex', 'province', 'city', 'puid', 'insert_time',
+                     'update_time', 'friend', 'is_friend']
+    list_display = ['avatar_url'] + search_fields
 
     readonly_fields = list_display
+
+    list_filter = ['is_friend', 'owner', 'sex', 'province', 'city', 'friend']
+
+    ordering = ['name', 'nick_name', 'remark_name']
 
     def avatar_url(self, row):
         avatar = row.avatar
@@ -42,4 +47,19 @@ class WxUserAdmin(admin.ModelAdmin):
 
 @admin.register(models.WxGroup)
 class WxGroupAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['avatar_url', 'name', 'nick_name', 'owner', 'member_count']
+    readonly_fields = list_display + ['members', 'user_name', 'puid', 'avatar']
+    list_display_links = ['avatar_url', 'name']
+
+    def avatar_url(self, row):
+        avatar = row.avatar
+        if avatar:
+            html = f'<img id="" src="{avatar}" width=38>'
+            return mark_safe(html)
+        return avatar
+
+    def member_count(self, row):
+        return row.members.count()
+
+    avatar_url.short_description = '头像'
+    member_count.short_description = '群员数'

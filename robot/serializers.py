@@ -20,3 +20,28 @@ class AppModel(serializers.ModelSerializer):
         except self.Meta.model.DoesNotExist:
             raise serializers.ValidationError({'errmsg': ['无效的app_id或app_secret']})
         return app
+
+
+# class AppAuthenticationSerializer(serializers.ModelSerializer):
+#     app_id = serializers.CharField()
+#     app_secret = serializers.CharField()
+
+
+class GroupModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.WxGroup
+        fields = '__all__'
+
+
+class FriendsModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.WxUser
+        fields = '__all__'
+
+
+class GroupMembersModelSerializer(serializers.ModelSerializer):
+    members = serializers.ManyRelatedField(child_relation=FriendsModelSerializer())
+
+    class Meta:
+        model = models.WxGroup
+        fields = ['members']
