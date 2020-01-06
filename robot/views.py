@@ -1,7 +1,7 @@
 from django.shortcuts import HttpResponse
 
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import RetrieveModelMixin, CreateModelMixin
+from rest_framework.mixins import RetrieveModelMixin, CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
 
 from utils import views
@@ -24,6 +24,7 @@ class LoginView(GenericViewSet):
     _status = None
     serializer_class = serializers.AppModel
     queryset = models.AppModel.objects.all()
+    authentication_classes = [authentication.AppAuthentication]
 
     def list(self, request, *args, **kwargs):
         """
@@ -153,6 +154,12 @@ class SendMessageApi(CreateModelMixin, views.GenericViewSet):
         return context
 
 
-class MessageApi(RetrieveModelMixin, views.GenericViewSet):
+class MessageApi(ListModelMixin, views.GenericViewSet):
     queryset = models.Message.objects.all()
     serializer_class = serializers.MessageModelSerializer
+    authentication_classes = [authentication.AppAuthentication]
+    filterset_fields = (
+        'type', 'create_time', 'receive_time', 'send_user', 'send_group', 'maps', 'receiver', 'receiver_group')
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)

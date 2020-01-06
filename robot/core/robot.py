@@ -31,7 +31,7 @@ class Quene(dict):
             self.UPDATE = True
             t = Thread(target=self.listening_robot)
             t.start()
-            print('update ing')
+            print('updating')
             # t.join()
 
     def listening_robot(self):
@@ -44,22 +44,25 @@ class Quene(dict):
     def update_friend_and_group(self, bot):
         update_group = Thread(target=self.update_groups, args=(bot,))
         update_friend = Thread(target=self.update_friends, args=(bot,))
+        update_mps = Thread(target=self.update_mps, args=(bot,))
         update_group.start()
         update_friend.start()
+        update_mps.start()
         update_group.join()
         update_friend.join()
+        update_mps.join()
 
     def update_groups(self, bot):
         groups = bot.bot.groups(update=True)
         owner = bot.user
-        max_workers = self.get_max_workers(groups) or 1
+        max_workers = self.get_max_workers(groups)
         with ThreadPoolExecutor(max_workers) as executor:
             for group in groups:
                 avatar = self.helper().get_avatar(group)
                 executor.submit(self.action.get_group, group, avatar=avatar, owner=owner)
 
     def get_max_workers(self, item):
-        return len(item) if len(item) < 10 else 10
+        return len(item) if len(item) < 10 else 10 or 1
 
     def update_friends(self, bot):
         firends = bot.bot.friends(update=True)
@@ -69,6 +72,13 @@ class Quene(dict):
             for firend in firends:
                 avatar = self.helper().get_avatar(firend)
                 executor.submit(self.action.get_user, firend, avatar=avatar, owner=owner, friend=True)
+
+    def update_mps(self, bot):
+        mps = bot.bot.mps()
+        max_workers = self.get_max_workers(mps)
+        with ThreadPoolExecutor(max_workers) as executor:
+            for mp in mps:
+                executor.submit(self.action.get_map, maps=mp)
 
 
 quene = Quene()
@@ -124,6 +134,7 @@ class Robot:
             r = requests.post(forward_url, json=forward_data)
             result = r.json()
             reply_obj = self.action.reply_message(msg, **result)
+            # self.action.message = reply_obj
             self.action.get_message(reply_obj, user=self.user)
         except Exception as e:
             debug_url = self.get_debug_url()
@@ -131,6 +142,7 @@ class Robot:
             requests.post(debug_url, json=errors)
 
     def get_forward_data(self, message, obj):
+        # 序列化收到的消息,转发给第三方
         message_data = serializers.MessageModelSerializer(instance=message).data
         serializer_class = self.forward_serializers_route.get(message.type)
         obj_data = serializer_class(instance=obj).data
@@ -138,6 +150,7 @@ class Robot:
         return message_data
 
     def _create_params(self):
+        # 创建加密参数
         timestamp = f'{int(time.time() * 1000)}'
         data = [self.app.app_id, self.app.token, timestamp]
         signature = create_signature(data)

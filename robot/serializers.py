@@ -96,10 +96,14 @@ class MessageModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Message
         fields = '__all__'
+        extra_kwargs = {
+            'create_time': {'format': '%Y-%m-%d %H:%M:%S'},
+            'receive_time': {'format': '%Y-%m-%d %H:%M:%S'},
+        }
 
     def get_content(self, row):
         msg_type = row.type
-        instance = getattr(row, f'{msg_type}message')
-        serializer_class = getattr(core.serializers, f'{msg_type.title()}Message')
+        instance = getattr(row, f'{msg_type.lower()}message')
+        serializer_class = getattr(core.serializers, f'{msg_type.title()}ModelSerializer')
         serializer = serializer_class(instance=instance)
         return serializer.data

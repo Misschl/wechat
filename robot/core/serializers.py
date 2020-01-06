@@ -188,7 +188,6 @@ class TextModelSerializer(MessageMixin, serializers.ModelSerializer):
 
     @classmethod
     def save_send_message(cls, message, instance, data):
-        print(6666666)
         return cls.Meta.model.objects.create(**{'text': message.text})
 
 
@@ -315,9 +314,16 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
         message = self.get_obj()
         # 获取信息的属性
         """send_user, send_group, receiver, is_at, maps"""
-        send_user, send_group, receiver, is_at, maps = self.get_extra_data(message)
+        send_user, send_group, receiver, is_at, maps, receiver_group = self.get_extra_data(message)
+        # 更新信息的基础属性
         data.update(
-            {'send_user': send_user, 'send_group': send_group, 'receiver': receiver, 'is_at': is_at, 'maps': maps}
+            {'send_user': send_user,
+             'send_group': send_group,
+             'receiver': receiver,
+             'is_at': is_at,
+             'maps': maps,
+             'receiver_group': receiver_group
+             }
         )
         owner = self.context.get('user')
         # 创建一条信息记录
@@ -344,6 +350,8 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
     def get_extra_data(self, obj: Message):
         sender = obj.sender
         receiver = obj.receiver
+
+        # 获取发送方的信息
         if isinstance(sender, Group):
             send_group = action().get_group(sender, update_members=False)
             send_user = action().get_user(obj.member)
@@ -358,30 +366,22 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
             send_user = None
             send_group = None
             is_at = None
-            maps = action().get_map(sender)
+            owner = self.context.get('user')
+            maps = action().get_map(sender, owner=owner)
+        else:
+            raise exception.UnknowMsgTypeException()
+
+        # 获取接受方的信息
         if isinstance(receiver, Friend):
             receiver = action().get_user(receiver)
-        # if isinstance(sender, Group):
-        #     send_group = action().get_group(sender, update_members=False)
-        #     send_user = action().get_user(obj.member)
-        #     is_at = obj.is_at
-        #     maps = None
-        # elif isinstance(sender, Friend) and isinstance(receiver, Friend):
-        #     send_user = action().get_user(sender)
-        #     send_group = None
-        #     is_at = None
-        #     maps = None
-        #     receiver = action().get_user(receiver)
-        # elif isinstance(sender, MP):
-        #     send_user = None
-        #     send_group = None
-        #     is_at = None
-        #     maps = action().get_map(sender)
-        # elif isinstance(sender, User):
-        #
-        #     raise exception.UnknowMsgTypeException()
-        receiver = action().get_user(receiver)
-        return send_user, send_group, receiver, is_at, maps
+            receiver_group = None
+        elif isinstance(receiver, Group):
+            receiver_group = action().get_group(receiver)
+            receiver = None
+        else:
+            raise exception.UnknowMsgTypeException()
+
+        return send_user, send_group, receiver, is_at, maps, receiver_group
 
 
 class ReplyMessage(serializers.Serializer):
@@ -407,8 +407,11 @@ class ReplyMessage(serializers.Serializer):
     def validate(self, attrs):
         msg_type = attrs.get('msg_type')
         url = attrs.get('url')
+        text = attrs.get('text')
         if msg_type != 'text' and url is None:
             raise serializers.ValidationError({'url': ['非文本类型url不可为空']})
+        if msg_type == 'text' and text is None:
+            raise serializers.ValidationError({'text': ['text类型text不可为空']})
         return attrs
 
     def save(self, **kwargs):

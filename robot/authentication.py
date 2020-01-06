@@ -13,6 +13,6 @@ class AppAuthentication(BaseAuthentication):
             app: models.AppModel = serializer.validated_data
             if app.bind_user is not None:
                 return app.bind_user, app
-            raise AuthenticationFailed(detail='该app未激活')
-        raise AuthenticationFailed(serializer.errors)
+            raise AuthenticationFailed(detail='该app未激活', code='errmsg')
+        raise AuthenticationFailed(detail='认证失败', code='errmsg')
 

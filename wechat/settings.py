@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_swagger',
+    'django_filters',
     'robot.apps.RobotConfig',
 ]
 
@@ -116,6 +117,7 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 CACHES = {
     "default": {
@@ -146,3 +148,8 @@ REST_FRAMEWORK = {
 }
 
 UPDATE_FREQUENCY = 60 * 60 * 2
+
+
+SIMPLEUI_HOME_INFO = False
+
+SIMPLEUI_STATIC_OFFLINE = True
