@@ -15,3 +15,4 @@ class AppAuthentication(BaseAuthentication):
                 return app.bind_user, app
             raise AuthenticationFailed(detail='该app未激活')
         raise AuthenticationFailed(serializer.errors)
+

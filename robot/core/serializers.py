@@ -7,8 +7,9 @@ from robot import get_message_helper
 
 from . import exception
 
-from wxpy.api.bot import Group, Friend, MP
+from wxpy.api.bot import Group, Friend, MP, User
 from wxpy.api.messages import Message
+from wxpy.api.messages.sent_message import SentMessage
 
 import pysnooper
 
@@ -147,7 +148,7 @@ class WxMpsModelSerializer(AbstractSerializer, serializers.ModelSerializer):
 class MessageMixin:
 
     @classmethod
-    def save_message(cls, message, instance, data):
+    def save_receive_message(cls, message, instance, data):
         serializer = cls(instance=message)
         serializer_data = cls.get_serializer_data(serializer, message, instance, data)
         serializer = cls(data=serializer_data)
@@ -165,6 +166,16 @@ class MessageMixin:
     def get_extra_data(cls, serializer, message, instance, data):
         return {}
 
+    @classmethod
+    @pysnooper.snoop()
+    def save_send_message(cls, message, instance, data):
+        print(message.path)
+        path_list = message.path.split('\\')
+        file_name = path_list[-1]
+        url = '/media' + "".join(message.path.split('media')[1:]).replace('\\', '/')
+        data = {'file_name': file_name, 'url': url}
+        return cls.Meta.model.objects.create(**data)
+
 
 class TextModelSerializer(MessageMixin, serializers.ModelSerializer):
     class Meta:
@@ -174,6 +185,11 @@ class TextModelSerializer(MessageMixin, serializers.ModelSerializer):
     @classmethod
     def get_extra_data(cls, serializer, message, instance, data):
         return {'text': message.text}
+
+    @classmethod
+    def save_send_message(cls, message, instance, data):
+        print(6666666)
+        return cls.Meta.model.objects.create(**{'text': message.text})
 
 
 class MapModelSerializer(MessageMixin, serializers.ModelSerializer):
@@ -298,24 +314,32 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
         # 获取消息对象
         message = self.get_obj()
         # 获取信息的属性
+        """send_user, send_group, receiver, is_at, maps"""
         send_user, send_group, receiver, is_at, maps = self.get_extra_data(message)
         data.update(
             {'send_user': send_user, 'send_group': send_group, 'receiver': receiver, 'is_at': is_at, 'maps': maps}
         )
+        owner = self.context.get('user')
         # 创建一条信息记录
-        instance: models.Message = self.model.objects.create(**data)
+        instance: models.Message = self.model.objects.create(**data, owner=owner)
         try:
             # 根据消息类型来获取不同的序列化器
             serializer_class = self.serializers_route.get(instance.type)
             # 保存信息
-            handle = getattr(serializer_class, 'save_message')
+            if isinstance(message, Message):
+                # 保存收到的信息
+                handle = getattr(serializer_class, 'save_receive_message')
+            elif isinstance(message, SentMessage):
+                # 保存发出去的信息
+                handle = getattr(serializer_class, 'save_send_message')
+            else:
+                raise exception.UnknowMsgTypeException()
             obj = handle(message, instance, data)
-            print('保存完毕！')
             return instance, obj
         except Exception as e:
-            print(e)
             # 回滚
             transaction.savepoint_rollback(save_point)
+            raise e
 
     def get_extra_data(self, obj: Message):
         sender = obj.sender
@@ -330,16 +354,66 @@ class MessageModelSerializer(AbstractSerializer, serializers.ModelSerializer):
             send_group = None
             is_at = None
             maps = None
-        elif MP:
+        elif isinstance(sender, MP):
             send_user = None
             send_group = None
             is_at = None
             maps = action().get_map(sender)
-        else:
-            raise exception.UnknowMsgTypeException()
+        if isinstance(receiver, Friend):
+            receiver = action().get_user(receiver)
+        # if isinstance(sender, Group):
+        #     send_group = action().get_group(sender, update_members=False)
+        #     send_user = action().get_user(obj.member)
+        #     is_at = obj.is_at
+        #     maps = None
+        # elif isinstance(sender, Friend) and isinstance(receiver, Friend):
+        #     send_user = action().get_user(sender)
+        #     send_group = None
+        #     is_at = None
+        #     maps = None
+        #     receiver = action().get_user(receiver)
+        # elif isinstance(sender, MP):
+        #     send_user = None
+        #     send_group = None
+        #     is_at = None
+        #     maps = action().get_map(sender)
+        # elif isinstance(sender, User):
+        #
+        #     raise exception.UnknowMsgTypeException()
         receiver = action().get_user(receiver)
         return send_user, send_group, receiver, is_at, maps
 
 
 class ReplyMessage(serializers.Serializer):
-    pass
+    msg_type = serializers.CharField()
+    text = serializers.CharField(required=False, allow_blank=True)
+    url = serializers.URLField(required=False)
+
+    @property
+    def reply_route(self):
+        return {
+            'text': action().reply_text,
+            'image': action().reply_image,
+            'file': action().reply_file,
+            'video': action().reply_video,
+        }
+
+    def validate_msg_type(self, attrs):
+        msg_type_list = ['text', 'image', 'video', 'file', 'recording']
+        if attrs not in msg_type_list:
+            raise serializers.ValidationError('非法的消息类型!')
+        return attrs
+
+    def validate(self, attrs):
+        msg_type = attrs.get('msg_type')
+        url = attrs.get('url')
+        if msg_type != 'text' and url is None:
+            raise serializers.ValidationError({'url': ['非文本类型url不可为空']})
+        return attrs
+
+    def save(self, **kwargs):
+        message = self.context.get('message')
+        msg_type = self.validated_data.get('msg_type')
+        handle = self.reply_route.get(msg_type)
+        reply_obj = handle(message, **self.validated_data)
+        return reply_obj

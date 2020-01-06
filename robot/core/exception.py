@@ -2,5 +2,6 @@ class RobotException(Exception):
     pass
 
 
-class UnknowMsgTypeException(Exception):
+class UnknowMsgTypeException(RobotException):
     pass
+

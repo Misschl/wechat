@@ -1,12 +1,15 @@
 from django.conf import settings
 
+from datetime import datetime
 import os
+import requests
 
 
 class BaseHandle:
-    def __init__(self, robot=None, message=None):
+    def __init__(self, robot=None, message=None, **kwargs):
         self.robot = robot
         self.message = message
+        self.kwargs = kwargs
 
     def get_avatar(self, *args, **kwargs):
         raise NotImplemented()
@@ -63,7 +66,8 @@ class FileHandle(BaseHandle):
 
     def get_file_name(self):
         """如果要自定义名字,请重写该方法"""
-        return self.message.file_name
+        file_name = getattr(self.message, 'file_name', '')
+        return file_name
 
     def save_message_picture(self):
         """本地保存图片"""
@@ -80,3 +84,32 @@ class FileHandle(BaseHandle):
     def save_message_file(self):
         """本地存储文件"""
         return self.save_media(self.DEFAULT_FILE_PATH)
+
+    def save_send_media(self, default_path, default_extension_name):
+        attr = self.kwargs
+        url = attr.get('url')
+        file_name = f'{datetime.now().strftime("%Y%m%d-%H%M%S")[2:]}.{default_extension_name}'
+        save_path = os.path.join(self.get_save_path(default_path), file_name)
+        r = self.download(url)
+        with open(save_path, 'wb+') as f:
+            for chunk in r.iter_content(chunk_size=512):
+                if chunk:
+                    f.write(chunk)
+        return f'/{default_path}/{file_name}', save_path
+
+    def download(self, url):
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, stream=True, headers=headers)
+        return r
+
+    def save_send_image(self):
+        return self.save_send_media(self.DEFAULT_IMAGE_PATH, 'jpg')
+
+    def save_send_video(self):
+        return self.save_send_media(self.DEFAULT_VIDEO_PATH, 'mp4')
+
+    def save_send_file(self):
+        return self.save_send_media(self.DEFAULT_FILE_PATH, '')
+
+    def save_send_recording(self):
+        return self.save_send_media(self.DEFAULT_RECORDING_PATH, 'mp3')

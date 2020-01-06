@@ -12,8 +12,10 @@ from utils.etc import show_spend_time
 
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
+from wxpy.api.messages.sent_message import SentMessage
 import requests
-import time, logging
+import time
+import pysnooper
 
 DEFAULT_UPDATE_FREQUENCY = getattr(settings, 'UPDATE_FREQUENCY', 60 * 60 * 2)
 
@@ -24,10 +26,13 @@ class Quene(dict):
     helper = get_message_helper()
 
     def update(self, item, **kwargs) -> None:
+        super().update(item, **kwargs)
         if self.UPDATE is False:
-            Thread(target=self.listening_robot).start()
             self.UPDATE = True
-        return super().update(item, **kwargs)
+            t = Thread(target=self.listening_robot)
+            t.start()
+            print('update ing')
+            # t.join()
 
     def listening_robot(self):
         for bot in self.values():
@@ -47,7 +52,7 @@ class Quene(dict):
     def update_groups(self, bot):
         groups = bot.bot.groups(update=True)
         owner = bot.user
-        max_workers = self.get_max_workers(groups)
+        max_workers = self.get_max_workers(groups) or 1
         with ThreadPoolExecutor(max_workers) as executor:
             for group in groups:
                 avatar = self.helper().get_avatar(group)
@@ -100,21 +105,30 @@ class Robot:
         setattr(self, 'user', user)
         return user
 
-    def register(self, chats=None, msg_types=None, except_self=True, run_async=True, enabled=True):
+    def register(self, chats=None, msg_types=None, except_self=False, run_async=True, enabled=True):
         func = self.forward
         self.bot.registered.append(
             MessageConfig(bot=self.bot, func=func, chats=chats, msg_types=msg_types, except_self=except_self,
                           run_async=run_async, enabled=enabled))
 
     def forward(self, msg):
+        message, obj = self.action.get_message(msg, user=self.user)
+        if not isinstance(msg, SentMessage):
+            self._forward(msg, message, obj)
+
+    @pysnooper.snoop()
+    def _forward(self, msg, message, obj):
         try:
-            message, obj = self.action.get_message(msg)
             forward_url = self.get_forward_url()
             forward_data = self.get_forward_data(message, obj)
             r = requests.post(forward_url, json=forward_data)
-            print(r.json())
-        except Exception:
-            pass
+            result = r.json()
+            reply_obj = self.action.reply_message(msg, **result)
+            self.action.get_message(reply_obj, user=self.user)
+        except Exception as e:
+            debug_url = self.get_debug_url()
+            errors = {'errors': list(e.args)}
+            requests.post(debug_url, json=errors)
 
     def get_forward_data(self, message, obj):
         message_data = serializers.MessageModelSerializer(instance=message).data
@@ -123,9 +137,17 @@ class Robot:
         message_data.update({'content': obj_data})
         return message_data
 
-    def get_forward_url(self):
+    def _create_params(self):
         timestamp = f'{int(time.time() * 1000)}'
         data = [self.app.app_id, self.app.token, timestamp]
         signature = create_signature(data)
+        return timestamp, signature
+
+    def get_forward_url(self):
+        timestamp, signature = self._create_params()
         forward_url = f'{self.app.forward_url}?timestamp={timestamp}&signature={signature}'
         return forward_url
+
+    def get_debug_url(self):
+        timestamp, signature = self._create_params()
+        return f'{self.app.debug_url}?timestamp={timestamp}&signature={signature}'

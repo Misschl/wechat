@@ -63,3 +63,8 @@ class WxGroupAdmin(admin.ModelAdmin):
 
     avatar_url.short_description = '头像'
     member_count.short_description = '群员数'
+
+
+@admin.register(models.Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ['insert_time', 'type', 'send_user', 'send_group', 'receiver', 'maps']

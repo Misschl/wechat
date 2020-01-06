@@ -126,13 +126,14 @@ class Message(BaseModel):
     send_group = models.ForeignKey(WxGroup, on_delete=models.SET_NULL, null=True)
     maps = models.ForeignKey(WxMps, on_delete=models.SET_NULL, null=True)
     receiver = models.ForeignKey(WxUser, on_delete=models.SET_NULL, null=True, related_name='receiver')
+    owner = models.ForeignKey(WxUser, on_delete=models.SET_NULL, null=True, related_name='msg_owner')
 
     class Meta:
         verbose_name = verbose_name_plural = '消息记录'
 
 
 class BaseMessage(BaseModel):
-    message = models.ForeignKey(Message, on_delete=models.SET_NULL, null=True)
+    message = models.OneToOneField(Message, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         abstract = True
@@ -169,27 +170,27 @@ class SharingMessage(BaseMessage):
 
 
 class PictureMessage(BaseMessage):
-    file_name = models.CharField(max_length=255, verbose_name='文件名')
+    file_name = models.CharField(max_length=255, verbose_name='文件名', blank=True)
     url = models.CharField(verbose_name='文件地址', max_length=500)
-    img_height = models.IntegerField(verbose_name='图片高度')
-    img_width = models.IntegerField(verbose_name='图片宽度')
+    img_height = models.IntegerField(verbose_name='图片高度', null=True)
+    img_width = models.IntegerField(verbose_name='图片宽度', null=True)
 
     class Meta:
         verbose_name = verbose_name_plural = '图片消息'
 
 
 class RecordingMessage(BaseMessage):
-    voice_length = models.BigIntegerField()
+    voice_length = models.BigIntegerField(null=True)
     url = models.CharField(max_length=500)
-    file_name = models.CharField(max_length=255)
+    file_name = models.CharField(max_length=255, blank=True)
 
     class Meta:
         verbose_name = verbose_name_plural = '录音消息'
 
 
 class AttachmentMessage(BaseMessage):
-    file_name = models.CharField(max_length=255)
-    file_size = models.CharField(max_length=20)
+    file_name = models.CharField(max_length=255, blank=True)
+    file_size = models.CharField(max_length=20, null=True)
     url = models.CharField(max_length=500)
 
     class Meta:
@@ -197,8 +198,8 @@ class AttachmentMessage(BaseMessage):
 
 
 class VideoMessage(BaseMessage):
-    play_length = models.IntegerField()
-    file_name = models.CharField(max_length=255)
+    play_length = models.IntegerField(null=True)
+    file_name = models.CharField(max_length=255, blank=True)
     url = models.CharField(max_length=500)
 
     class Meta:
