@@ -136,7 +136,7 @@
         ```
  
  *  主动发消息
-    *   `url`: '/send?app_id=<app_id>&app_secret=<app_secret>' 
+    *   `url`: `/send?app_id=<app_id>&app_secret=<app_secret>`
     *   参数： 
     
         | 字段        | required |  type   | desc|
