@@ -134,3 +134,19 @@
             "success": true
         }
         ```
+ 
+ *  主动发消息
+    *   `url`: '/send?app' 
+    *   参数： 
+    
+        | 字段        | required |  type   | desc|
+        | --------   | --------:| :----:  | :----:|
+        | msg_type   |     是   |   string |   发送消息的类型(text, image, file, video)  |
+        | puid       |     是   |   string |发送对象的puid|
+        | group      |     否   |  Boolean  |发送对象是否为群组|
+        | text       |     否   |  string  |发送的文本内容,当msg_type为text时,该参数必填 |
+        | url        |     否   |  string  |发送媒体的url,当msg_type不为text时,该参数必填 |
+    *   成功返回
+        ```json
+        {"msg_type": "text", "puid": "1fee435b", "text": "666", "success": true}
+        ```
