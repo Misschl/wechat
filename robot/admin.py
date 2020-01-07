@@ -8,6 +8,8 @@ from . import models
 
 admin.site.site_title = "WeChat后台管理"
 admin.site.site_header = "WeChat"
+admin.site.index_title = "GitHub"
+admin.site.site_url = 'https://github.com/Ivy-1996/wechat'
 
 
 @admin.register(models.AppModel)
