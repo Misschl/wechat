@@ -48,14 +48,15 @@ class LoginView(GenericViewSet):
         cache_pkl = app.cache_pkl(delete=True)
         bot = Bot(qr_callback=self.qr_callback, cache_path=cache_pkl)
         bot = robot.Robot(bot, app)
-        robot.quene.update({app.app_id: bot})
         result = self.check_bot_permissions(bot, app)
-        return result
+        if result:
+            robot.quene.update({app.app_id: bot})
 
     @staticmethod
     def check_bot_permissions(bot, app):
-        # if app.bind_user.puid != bot.bot.self.puid:
-        #     raise Exception()
+        if app.bind_user is not None:
+            if app.bind_user.puid != bot.bot.self.puid:
+                return False
         return True
 
     # 递归查询二维码是否生成

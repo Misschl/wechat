@@ -3,7 +3,8 @@ from robot.core.action import SimpleAction
 from robot.core.serializers import TextModelSerializer, PictureModelSerializer, AttachmentModelSerializer, \
     VideoModelSerializer
 from robot import core
-
+from robot.core import security
+import time
 from . import models
 
 
@@ -26,9 +27,31 @@ class AppModel(serializers.ModelSerializer):
         return app
 
 
-# class AppAuthenticationSerializer(serializers.ModelSerializer):
-#     app_id = serializers.CharField()
-#     app_secret = serializers.CharField()
+class SignatureAuthenticationSerializer(serializers.Serializer):
+    timestamp = serializers.IntegerField()
+    signature = serializers.CharField()
+    app_id = serializers.CharField()
+    app_secret = serializers.CharField()
+
+    def validate_timestamp(self, attr):
+        if time.time() - attr > 10:
+            raise serializers.ValidationError('timestamp已失效!')
+        return attr
+
+    def validate(self, attrs):
+        app_id = attrs.get('app_id')
+        app_secret = attrs.get('app_secret')
+        timestamp = str(attrs.get('timestamp'))
+        signature = attrs.get('signature')
+        try:
+            app = models.AppModel.objects.get(app_id=app_id, app_secret=app_secret)
+        except models.AppModel.DoesNotExist:
+            raise serializers.ValidationError({'app_id': ['无效的app_id']})
+        data = [app.token, timestamp]
+        real_signature = security.create_signature(data)
+        if real_signature != signature:
+            raise serializers.ValidationError({'signature': ['无效的signature']})
+        return app
 
 
 class GroupModelSerializer(serializers.ModelSerializer):

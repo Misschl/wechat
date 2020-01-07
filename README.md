@@ -42,8 +42,21 @@
     *   `url`: `/login?app_id=<app_id>&app_secret=<app_secret>`
     *   由于微信的隐私策略,一个app只能绑定一个微信账号,第一次登录的用户默认绑定该app
 
+*   生成签名
+    *   由创建app时候设置的token和当前的时间戳经过sha1加密生成
+    ```python
+    import hashlib
+
+
+    def create_signature(token:str, timestamp:str, reverse=False):
+        data = [token, timestamp]
+        data.sort(reverse=reverse)
+        key = ''.join(data)
+        return hashlib.sha1(key.encode()).hexdigest()
+    ```
+    
 *   获取好友列表
-    *   `url`: `/firends?app_id=<app_id>&app_secret=<app_secret>`
+    *   `url`: `/firends?app_id=<app_id>&app_secret=<app_secret>&timestamp=<timestamp>&signature=<signature>`
     *   返回格式:
         ```json
         
@@ -76,7 +89,7 @@
         ```
 	*
 *	获取群组列表
-	* 	`url`: `/groups?app_id=<app_id>&app_secret=<app_secret>`
+	* 	`url`: `/groups?app_id=<app_id>&app_secret=<app_secret>&timestamp=<timestamp>&signature=<signature>`
 	*	返回格式
 		```json
   
@@ -104,7 +117,7 @@
     ```
 
 *	获取群员列表
-	* `url`: `/members/<group_puid>?app_id=<app_id>&app_secret=<app_secret>`
+	* `url`: `/members/<group_puid>?app_id=<app_id>&app_secret=<app_secret>&timestamp=<timestamp>&signature=<signature>`
 	*  返回格式
 	    ```json
           {
@@ -136,7 +149,7 @@
         ```
  
  *  主动发消息
-    *   `url`: `/send?app_id=<app_id>&app_secret=<app_secret>`
+    *   `url`: `/send?app_id=<app_id>&app_secret=<app_secret>&timestamp=<timestamp>&signature=<signature>`
     *   参数： 
     
         | 字段        | required |  type   | desc|
@@ -187,7 +200,7 @@
         | url        |     否   |  string  |发送媒体的url,当msg_type不为text时,该参数必填 |
 
 *   查询聊天记录
-    *   `url`: `/message?app_id=<app_id>&app_secret=<app_secret>`
+    *   `url`: `/message?app_id=<app_id>&app_secret=<app_secret>&timestamp=<timestamp>&signature=<signature>`
     *   不加条件筛选默认返回所有当前app绑定用户的所有聊天记录
     *   支持删选的条件
         ```python
