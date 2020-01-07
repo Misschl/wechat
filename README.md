@@ -79,6 +79,7 @@
 	* 	`url`: `/groups?app_id=<app_id>&app_secret=<app_secret>`
 	*	返回格式
 		```json
+  
     {
         "count": 13,
         "next": "http://127.0.0.1:8000/groups?app_id=e418ca26ef104af981b22cbc8eacbb21&app_secret=31b670e4303211ea9b6200e070812cea&page=2",
@@ -98,8 +99,11 @@
                 ......
         ],
         "success": true
+        
 }
-```
+
+    ```
 
 *	获取群员列表
 	* `url`: `/members/<group_puid>?app_id=<app_id>&app_secret=<app_secret>`
+	
