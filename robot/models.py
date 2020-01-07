@@ -51,6 +51,9 @@ class AppModel(BaseModel):
                 pass
         return cache_pkl
 
+    def __str__(self):
+        return self.app_name
+
 
 class WxUser(BaseModel):
     SEX_CHOICES = (
