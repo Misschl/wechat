@@ -32,9 +32,14 @@ class AppModel(serializers.ModelSerializer):
 
 
 class GroupModelSerializer(serializers.ModelSerializer):
+    member_count = serializers.SerializerMethodField()
+
     class Meta:
         model = models.WxGroup
-        fields = '__all__'
+        exclude = ['members']
+
+    def get_member_count(self, row):
+        return row.members.count()
 
 
 class FriendsModelSerializer(serializers.ModelSerializer):
