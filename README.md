@@ -136,7 +136,7 @@
         ```
  
  *  主动发消息
-    *   `url`: '/send?app' 
+    *   `url`: '/send?app_id=<app_id>&app_secret=<app_secret>' 
     *   参数： 
     
         | 字段        | required |  type   | desc|
@@ -150,3 +150,38 @@
         ```json
         {"msg_type": "text", "puid": "1fee435b", "text": "666", "success": true}
         ```
+
+*   被动回复消息
+    *   当接受到消息之后,消息会发送到创建app时配置的url上
+    *   发送消息格式
+    ```json
+    {
+      "id": 6050338562629220245,
+      "insert_time": "2020-01-07T11:25:46.124013",
+      "update_time": "2020-01-07T11:25:46.124013",
+      "type": "Text", 
+      "create_time": "2020-01-07T11:32:48",
+      "receive_time": "2020-01-07T11:25:45.988020",
+      "is_at": null, 
+      "send_user": "1fee435b",
+      "send_group": null,
+      "maps": null,
+      "receiver": "e1d54615",
+      "receiver_group": null,
+      "owner": "e1d54615",
+      "content": {
+          "id": 44,
+          "insert_time": "2020-01-07T11:25:46.149010",
+          "update_time": "2020-01-07T11:25:46.149010", 
+          "text": "测试",
+          "message": 6050338562629220245
+          }
+      }
+    ```
+    *   回复参数
+    
+    | 字段        | required |  type   | desc|
+    | --------   | --------:| :----:  | :----:|
+    | msg_type   |     是   |   string |   发送消息的类型(text, image, file, video)  |
+    | text       |     否   |  string  |发送的文本内容,当msg_type为text时,该参数必填 |
+    | url        |     否   |  string  |发送媒体的url,当msg_type不为text时,该参数必填 |
