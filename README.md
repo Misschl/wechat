@@ -80,30 +80,57 @@
 	*	返回格式
 		```json
   
-    {
-        "count": 13,
-        "next": "http://127.0.0.1:8000/groups?app_id=e418ca26ef104af981b22cbc8eacbb21&app_secret=31b670e4303211ea9b6200e070812cea&page=2",
-        "previous": null,
-        "results": [
-                {
-                    "puid": "973e46d8",
-                    "member_count": 3,
-                    "insert_time": "2020-01-06T15:21:20.837751",
-                    "update_time": "2020-01-06T16:11:29.169215",
-                    "name": "测试群1",
-                    "nick_name": "测试群1",
-                    "user_name": "@@9419e194b03ebddd6b62b7ebd9de397eb764c8e450c1552e4e9f8b27e7f066ec",
-                    "avatar": "/media/image/avatar/973e46d8.jpg",
-                    "owner": "12ed2cd6"
-                },
-                ......
-        ],
-        "success": true
-        
-}
+        {
+            "count": 13,
+            "next": "http://127.0.0.1:8000/groups?app_id=e418ca26ef104af981b22cbc8eacbb21&app_secret=31b670e4303211ea9b6200e070812cea&page=2",
+            "previous": null,
+            "results": [
+                    {
+                        "puid": "973e46d8",
+                        "member_count": 3,
+                        "insert_time": "2020-01-06T15:21:20.837751",
+                        "update_time": "2020-01-06T16:11:29.169215",
+                        "name": "测试群1",
+                        "nick_name": "测试群1",
+                        "user_name": "@@9419e194b03ebddd6b62b7ebd9de397eb764c8e450c1552e4e9f8b27e7f066ec",
+                        "avatar": "/media/image/avatar/973e46d8.jpg",
+                        "owner": "12ed2cd6"
+                    },
+                    ......
+            ],
+            "success": true
+        }
 
     ```
 
 *	获取群员列表
 	* `url`: `/members/<group_puid>?app_id=<app_id>&app_secret=<app_secret>`
-	
+	*  返回格式
+	    ```json
+          {
+            "count": 4,
+            "next": null,
+            "previous": null,
+            "results": [
+                {
+                    "puid": "c9c27d87",
+                    "insert_time": "2020-01-07T10:20:31.179869",
+                    "update_time": "2020-01-07T10:21:13.701743",
+                    "name": "name",
+                    "nick_name": "nick_name",
+                    "user_name": "user_name",
+                    "remark_name": "***",
+                    "avatar": "/media/image/avatar/c9c27d87.jpg",
+                    "signature": "想念从前的某些日子某些朋友\n时光总是在走，记忆似乎也已模糊了",
+                    "sex": 1,
+                    "province": "**",
+                    "city": "**",
+                    "is_friend": true,
+                    "friend": true,
+                    "owner": "e1d54615"
+                },
+                ......
+            ],
+            "success": true
+        }
+        ```

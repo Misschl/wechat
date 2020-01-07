@@ -1,4 +1,5 @@
 from django.shortcuts import HttpResponse
+from rest_framework.exceptions import MethodNotAllowed
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import RetrieveModelMixin, CreateModelMixin, ListModelMixin
@@ -24,7 +25,8 @@ class LoginView(GenericViewSet):
     _status = None
     serializer_class = serializers.AppModel
     queryset = models.AppModel.objects.all()
-    authentication_classes = [authentication.AppAuthentication]
+
+    # authentication_classes = [authentication.AppAuthentication]
 
     def list(self, request, *args, **kwargs):
         """
@@ -116,19 +118,28 @@ class FriendsApi(views.ReadOnlyModelViewSet):
         return self.queryset.filter(owner=self.request.user)
 
 
-class MembersApi(RetrieveModelMixin, views.GenericViewSet):
+class MembersApi(views.ReadOnlyModelViewSet):
     """
     retrieve:
         群成员
         :QueryParam: app_id  必填参数
         :QueryParam: app_secret  必填参数
     """
-    serializer_class = serializers.GroupMembersModelSerializer
+    serializer_class = serializers.FriendsModelSerializer
     authentication_classes = [authentication.AppAuthentication]
     queryset = models.WxGroup.objects.all()
 
     def get_queryset(self):
         return self.queryset.filter(owner=self.request.user)
+
+    def list(self, request, *args, **kwargs) -> Response:
+        raise MethodNotAllowed(method='GET', detail='Not Allowed')
+
+    def retrieve(self, request, *args, **kwargs):
+        """将详情页转化为列表页"""
+        instance = self.get_object()
+        self.queryset = instance.members.all()
+        return super().list(request, *args, **kwargs)
 
 
 class SendMessageApi(CreateModelMixin, views.GenericViewSet):

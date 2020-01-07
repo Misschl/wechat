@@ -48,12 +48,12 @@ class FriendsModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class GroupMembersModelSerializer(serializers.ModelSerializer):
-    members = serializers.ManyRelatedField(child_relation=FriendsModelSerializer())
-
-    class Meta:
-        model = models.WxGroup
-        fields = ['members']
+# class GroupMembersModelSerializer(serializers.ModelSerializer):
+#     # members = serializers.ManyRelatedField(child_relation=FriendsModelSerializer())
+#
+#     class Meta:
+#         model = models.WxGroup
+#         fields = '__all__'
 
 
 class SendMessageSerializer(serializers.Serializer):
