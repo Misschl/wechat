@@ -180,8 +180,50 @@
     ```
     *   回复参数
     
-    | 字段        | required |  type   | desc|
-    | --------   | --------:| :----:  | :----:|
-    | msg_type   |     是   |   string |   发送消息的类型(text, image, file, video)  |
-    | text       |     否   |  string  |发送的文本内容,当msg_type为text时,该参数必填 |
-    | url        |     否   |  string  |发送媒体的url,当msg_type不为text时,该参数必填 |
+        | 字段        | required |  type   | desc|
+        | --------   | --------:| :----:  | :----:|
+        | msg_type   |     是   |   string |   发送消息的类型(text, image, file, video)  |
+        | text       |     否   |  string  |发送的文本内容,当msg_type为text时,该参数必填 |
+        | url        |     否   |  string  |发送媒体的url,当msg_type不为text时,该参数必填 |
+
+*   查询聊天记录
+    *   `url`: `/message?app_id=<app_id>&app_secret=<app_secret>`
+    *   不加条件筛选默认返回所有当前app绑定用户的所有聊天记录
+    *   支持删选的条件
+        ```python
+        filterset_fields = ('type', 'create_time', 'receive_time', 'send_user', 'send_group', 'maps', 'receiver', 'receiver_group')
+        ```
+        如: `/message?app_id=<app_id>&app_secret=<app_secret>&send_user=1fee435b`
+    *   返回格式
+        ```json
+        {
+            "count": 1,
+            "next": null,
+            "previous": null,
+            "results": [
+                {
+                    "id": 6050338562629220245,
+                    "content": {
+                        "id": 44,
+                        "insert_time": "2020-01-07T11:25:46.149010",
+                        "update_time": "2020-01-07T11:25:46.149010",
+                        "text": "测试",
+                        "message": 6050338562629220245
+                    },
+                    "insert_time": "2020-01-07T11:25:46.124013",
+                    "update_time": "2020-01-07T11:25:46.124013",
+                    "type": "Text",
+                    "create_time": "2020-01-07 11:32:48",
+                    "receive_time": "2020-01-07 11:25:45",
+                    "is_at": null,
+                    "send_user": "1fee435b",
+                    "send_group": null,
+                    "maps": null,
+                    "receiver": "e1d54615",
+                    "receiver_group": null,
+                    "owner": "e1d54615"
+                }
+            ],
+            "success": true
+        }
+        ```
